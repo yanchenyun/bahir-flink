@@ -17,14 +17,12 @@
 
 package org.apache.flink.streaming.connectors.redis.common.config;
 
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.apache.flink.streaming.connectors.redis.common.Util;
+import org.apache.flink.streaming.connectors.redis.descriptor.RedisOptions;
+import org.apache.flink.util.Preconditions;
 import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.Protocol;
 
 import java.net.InetSocketAddress;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -58,8 +56,8 @@ public class FlinkJedisClusterConfig extends FlinkJedisConfigBase {
                                     boolean testOnBorrow, boolean testOnReturn, boolean testWhileIdle) {
         super(connectionTimeout, maxTotal, maxIdle, minIdle, password, testOnBorrow, testOnReturn, testWhileIdle);
 
-        Objects.requireNonNull(nodes, "Node information should be presented");
-        Util.checkArgument(!nodes.isEmpty(), "Redis cluster hosts should not be empty");
+        Preconditions.checkNotNull(nodes, "Node information should be presented");
+        Preconditions.checkArgument(!nodes.isEmpty(), "Redis cluster hosts should not be empty");
         this.nodes = new HashSet<>(nodes);
         this.maxRedirections = maxRedirections;
     }
@@ -94,14 +92,14 @@ public class FlinkJedisClusterConfig extends FlinkJedisConfigBase {
      */
     public static class Builder {
         private Set<InetSocketAddress> nodes;
-        private int timeout = Protocol.DEFAULT_TIMEOUT;
-        private int maxRedirections = 5;
-        private int maxTotal = GenericObjectPoolConfig.DEFAULT_MAX_TOTAL;
-        private int maxIdle = GenericObjectPoolConfig.DEFAULT_MAX_IDLE;
-        private int minIdle = GenericObjectPoolConfig.DEFAULT_MIN_IDLE;
-        private boolean testOnBorrow = GenericObjectPoolConfig.DEFAULT_TEST_ON_BORROW;
-        private boolean testOnReturn = GenericObjectPoolConfig.DEFAULT_TEST_ON_RETURN;
-        private boolean testWhileIdle = GenericObjectPoolConfig.DEFAULT_TEST_WHILE_IDLE;
+        private int timeout = RedisOptions.CONNECTION_TIMEOUT_MS.defaultValue();
+        private int maxRedirections = RedisOptions.CONNECTION_MAX_REDIRECTIONS.defaultValue();
+        private int maxTotal = RedisOptions.CONNECTION_MAX_TOTAL.defaultValue();
+        private int maxIdle = RedisOptions.CONNECTION_MAX_IDLE.defaultValue();
+        private int minIdle = RedisOptions.CONNECTION_MIN_IDLE.defaultValue();
+        private boolean testOnBorrow = RedisOptions.CONNECTION_TEST_ON_BORROW.defaultValue();
+        private boolean testOnReturn = RedisOptions.CONNECTION_TEST_ON_RETURN.defaultValue();
+        private boolean testWhileIdle = RedisOptions.CONNECTION_TEST_WHILE_IDLE.defaultValue();
         private String password;
 
         /**

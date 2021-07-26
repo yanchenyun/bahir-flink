@@ -16,10 +16,9 @@
  */
 package org.apache.flink.streaming.connectors.redis.common.config;
 
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import redis.clients.jedis.Protocol;
+import org.apache.flink.streaming.connectors.redis.descriptor.RedisOptions;
+import org.apache.flink.util.Preconditions;
 
-import java.util.Objects;
 
 /**
  * Configuration for Jedis pool.
@@ -55,7 +54,7 @@ public class FlinkJedisPoolConfig extends FlinkJedisConfigBase {
                                  boolean testOnBorrow, boolean testOnReturn, boolean testWhileIdle) {
         super(connectionTimeout, maxTotal, maxIdle, minIdle, password, testOnBorrow, testOnReturn, testWhileIdle);
 
-        Objects.requireNonNull(host, "Host information should be presented");
+        Preconditions.checkNotNull(host, "Host information should be presented");
         this.host = host;
         this.port = port;
         this.database = database;
@@ -93,17 +92,17 @@ public class FlinkJedisPoolConfig extends FlinkJedisConfigBase {
      * Builder for initializing  {@link FlinkJedisPoolConfig}.
      */
     public static class Builder {
-        private String host;
-        private int port = Protocol.DEFAULT_PORT;
-        private int timeout = Protocol.DEFAULT_TIMEOUT;
-        private int database = Protocol.DEFAULT_DATABASE;
+        private String host = RedisOptions.SINGLE_HOST.defaultValue();
+        private int port = RedisOptions.SINGLE_PORT.defaultValue();
+        private int timeout = RedisOptions.CONNECTION_TIMEOUT_MS.defaultValue();
+        private int database = RedisOptions.DB_NUM.defaultValue();
         private String password;
-        private int maxTotal = GenericObjectPoolConfig.DEFAULT_MAX_TOTAL;
-        private int maxIdle = GenericObjectPoolConfig.DEFAULT_MAX_IDLE;
-        private int minIdle = GenericObjectPoolConfig.DEFAULT_MIN_IDLE;
-        private boolean testOnBorrow = GenericObjectPoolConfig.DEFAULT_TEST_ON_BORROW;
-        private boolean testOnReturn = GenericObjectPoolConfig.DEFAULT_TEST_ON_RETURN;
-        private boolean testWhileIdle = GenericObjectPoolConfig.DEFAULT_TEST_WHILE_IDLE;
+        private int maxTotal = RedisOptions.CONNECTION_MAX_TOTAL.defaultValue();
+        private int maxIdle = RedisOptions.CONNECTION_MAX_IDLE.defaultValue();
+        private int minIdle = RedisOptions.CONNECTION_MIN_IDLE.defaultValue();
+        private boolean testOnBorrow = RedisOptions.CONNECTION_TEST_ON_BORROW.defaultValue();
+        private boolean testOnReturn = RedisOptions.CONNECTION_TEST_ON_RETURN.defaultValue();
+        private boolean testWhileIdle = RedisOptions.CONNECTION_TEST_WHILE_IDLE.defaultValue();
 
         /**
          * Sets value for the {@code maxTotal} configuration attribute

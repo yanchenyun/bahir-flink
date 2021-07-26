@@ -16,13 +16,13 @@
  */
 package org.apache.flink.streaming.connectors.redis.common.container;
 
+import org.apache.flink.util.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisCluster;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * Redis command container if we want to connect to a Redis cluster.
@@ -41,13 +41,13 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
      * @param jedisCluster JedisCluster instance
      */
     public RedisClusterContainer(JedisCluster jedisCluster) {
-        Objects.requireNonNull(jedisCluster, "Jedis cluster can not be null");
+        Preconditions.checkNotNull(jedisCluster, "Jedis cluster can not be null");
 
         this.jedisCluster = jedisCluster;
     }
 
     @Override
-    public void open() throws Exception {
+    public void open() {
 
         // echo() tries to open a connection and echos back the
         // message passed as argument. Here we use it to monitor
@@ -66,19 +66,48 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
         } catch (Exception e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command HSET to hash {} of key {} error message {}",
-                    hashField, key, e.getMessage());
+                        hashField, key, e.getMessage());
             }
             throw e;
         }
     }
 
     @Override
-    public void hincrBy(final String key, final String hashField, final Long value, final Integer ttl) {
+    public String hget(final String key, final String hashField) {
         try {
-            jedisCluster.hincrBy(key, hashField, value);
+            return jedisCluster.hget(key, hashField);
+        } catch (Exception e) {
+            if (LOG.isErrorEnabled()) {
+                LOG.error("Cannot send Redis message with command HGET to hash {} of key {} error message {}",
+                        hashField, key, e.getMessage());
+            }
+            throw e;
+        }
+    }
+
+
+    @Override
+    public Long hdel(final String key, final String hashField) {
+        try {
+            return jedisCluster.hdel(key, hashField);
+        } catch (Exception e) {
+            if (LOG.isErrorEnabled()) {
+                LOG.error("Cannot send Redis message with command HDEL to hash {} of key {} error message {}",
+                        hashField, key, e.getMessage());
+            }
+            throw e;
+        }
+    }
+
+
+    @Override
+    public Long hincrBy(final String key, final String hashField, final Long value, final Integer ttl) {
+        try {
+            Long result = jedisCluster.hincrBy(key, hashField, value);
             if (ttl != null) {
                 jedisCluster.expire(key, ttl);
             }
+            return result;
         } catch (Exception e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command HINCRBY to hash {} of key {} error message {}",
@@ -95,7 +124,7 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
         } catch (Exception e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command RPUSH to list {} error message: {}",
-                    listName, e.getMessage());
+                        listName, e.getMessage());
             }
             throw e;
         }
@@ -108,7 +137,7 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
         } catch (Exception e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command LPUSH to list {} error message: {}",
-                    listName, e.getMessage());
+                        listName, e.getMessage());
             }
             throw e;
         }
@@ -121,7 +150,7 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
         } catch (Exception e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command RPUSH to set {} error message {}",
-                    setName, e.getMessage());
+                        setName, e.getMessage());
             }
             throw e;
         }
@@ -134,7 +163,7 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
         } catch (Exception e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command PUBLISH to channel {} error message {}",
-                    channelName, e.getMessage());
+                        channelName, e.getMessage());
             }
             throw e;
         }
@@ -147,7 +176,20 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
         } catch (Exception e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command SET to key {} error message {}",
-                    key, e.getMessage());
+                        key, e.getMessage());
+            }
+            throw e;
+        }
+    }
+
+    @Override
+    public String get(final String key) {
+        try {
+            return jedisCluster.get(key);
+        } catch (Exception e) {
+            if (LOG.isErrorEnabled()) {
+                LOG.error("Cannot send Redis message with command GET to key {} error message {}",
+                        key, e.getMessage());
             }
             throw e;
         }
@@ -173,7 +215,7 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
         } catch (Exception e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command PFADD to key {} error message {}",
-                    key, e.getMessage());
+                        key, e.getMessage());
             }
             throw e;
         }
@@ -182,11 +224,11 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
     @Override
     public void zadd(final String key, final String score, final String element) {
         try {
-            jedisCluster.zadd(key, Double.valueOf(score), element);
+            jedisCluster.zadd(key, Double.parseDouble(score), element);
         } catch (Exception e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command ZADD to set {} error message {}",
-                    key, e.getMessage());
+                        key, e.getMessage());
             }
             throw e;
         }
@@ -196,7 +238,7 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
     public void zincrBy(final String key, final String score, final String element) {
 
         try {
-            jedisCluster.zincrby(key, Double.valueOf(score), element);
+            jedisCluster.zincrby(key, Double.parseDouble(score), element);
         } catch (Exception e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command ZINCRBY to set {} error message {}",
@@ -213,18 +255,19 @@ public class RedisClusterContainer implements RedisCommandsContainer, Closeable 
         } catch (Exception e) {
             if (LOG.isDebugEnabled()) {
                 LOG.error("Cannot send Redis message with command ZREM to set {} error message {}",
-                    key, e.getMessage());
+                        key, e.getMessage());
             }
         }
     }
 
     @Override
-    public void incrByEx(String key, Long value, Integer ttl) {
+    public Long incrByEx(String key, Long value, Integer ttl) {
         try {
-            jedisCluster.incrBy(key, value);
+            Long result = jedisCluster.incrBy(key, value);
             if (ttl != null) {
                 jedisCluster.expire(key, ttl);
             }
+            return result;
         } catch (Exception e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error("Cannot send Redis message with command incrby and ttl to key {} with increment {} and tll {} error message {}",

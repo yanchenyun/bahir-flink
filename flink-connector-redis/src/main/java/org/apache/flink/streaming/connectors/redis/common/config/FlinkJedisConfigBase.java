@@ -17,7 +17,7 @@
 package org.apache.flink.streaming.connectors.redis.common.config;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.apache.flink.streaming.connectors.redis.common.Util;
+import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
 
@@ -39,15 +39,16 @@ public abstract class FlinkJedisConfigBase implements Serializable {
 
     protected FlinkJedisConfigBase(int connectionTimeout, int maxTotal, int maxIdle, int minIdle, String password, boolean testOnBorrow, boolean testOnReturn, boolean testWhileIdle) {
 
-        Util.checkArgument(connectionTimeout >= 0, "connection timeout can not be negative");
-        Util.checkArgument(maxTotal >= 0, "maxTotal value can not be negative");
-        Util.checkArgument(maxIdle >= 0, "maxIdle value can not be negative");
-        Util.checkArgument(minIdle >= 0, "minIdle value can not be negative");
+        Preconditions.checkArgument(connectionTimeout >= 0, "connection timeout can not be negative");
+        Preconditions.checkArgument(maxTotal >= 0, "maxTotal value can not be negative");
+        Preconditions.checkArgument(maxIdle >= 0, "maxIdle value can not be negative");
+        Preconditions.checkArgument(minIdle >= 0, "minIdle value can not be negative");
 
         this.connectionTimeout = connectionTimeout;
         this.maxTotal = maxTotal;
         this.maxIdle = maxIdle;
         this.minIdle = minIdle;
+
         this.testOnBorrow = testOnBorrow;
         this.testOnReturn = testOnReturn;
         this.testWhileIdle = testWhileIdle;

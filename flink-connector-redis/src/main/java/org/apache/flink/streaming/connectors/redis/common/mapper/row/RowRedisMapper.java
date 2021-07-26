@@ -22,6 +22,7 @@ import org.apache.flink.streaming.connectors.redis.common.hanlder.RedisMapperHan
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommand;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommandDescription;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisMapper;
+import org.apache.flink.streaming.connectors.redis.descriptor.RedisOptions;
 import org.apache.flink.types.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.apache.flink.streaming.connectors.redis.descriptor.RedisValidator.REDIS_COMMAND;
 
 /**
  * base row redis mapper implement.
@@ -92,7 +92,7 @@ public abstract class RowRedisMapper implements RedisMapper<Tuple2<Boolean, Row>
     @Override
     public Map<String, String> requiredContext() {
         Map<String, String> require = new HashMap<>();
-        require.put(REDIS_COMMAND, getRedisCommand().name());
+        require.put(RedisOptions.COMMAND.key(), getRedisCommand().name());
         return require;
     }
 

@@ -16,22 +16,16 @@
  */
 package org.apache.flink.streaming.connectors.redis.common.config.handler;
 
-import static org.apache.flink.streaming.connectors.redis.descriptor.RedisValidator.REDIS_CLUSTER;
-import static org.apache.flink.streaming.connectors.redis.descriptor.RedisValidator.REDIS_MODE;
-import static org.apache.flink.streaming.connectors.redis.descriptor.RedisValidator.REDIS_NODES;
-import static org.apache.flink.streaming.connectors.redis.descriptor.RedisValidator.REDIS_CLUSTER_PASSWORD;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.flink.configuration.ReadableConfig;
 import org.apache.flink.streaming.connectors.redis.common.config.FlinkJedisClusterConfig;
 import org.apache.flink.streaming.connectors.redis.common.config.FlinkJedisConfigBase;
 import org.apache.flink.streaming.connectors.redis.common.hanlder.FlinkJedisConfigHandler;
+import org.apache.flink.streaming.connectors.redis.descriptor.RedisOptions;
 import org.apache.flink.util.Preconditions;
 
 /**
@@ -40,18 +34,24 @@ import org.apache.flink.util.Preconditions;
 public class FlinkJedisClusterConfigHandler implements FlinkJedisConfigHandler {
 
     @Override
-    public FlinkJedisConfigBase createFlinkJedisConfig(Map<String, String> properties) {
-        Preconditions.checkArgument(properties.containsKey(REDIS_NODES), "nodes should not be null in cluster mode");
-        String nodesInfo = properties.get(REDIS_NODES);
+    public FlinkJedisConfigBase createFlinkJedisConfig(ReadableConfig config) {
+        String nodesInfo = config.get(RedisOptions.CLUSTER_NODES);
+        Preconditions.checkNotNull(nodesInfo, "nodes should not be null in cluster mode");
+
         Set<InetSocketAddress> nodes = Arrays.stream(nodesInfo.split(",")).map(r -> {
             String[] arr = r.split(":");
             return new InetSocketAddress(arr[0].trim(), Integer.parseInt(arr[1].trim()));
         }).collect(Collectors.toSet());
-        String clusterPassword = properties.getOrDefault(REDIS_CLUSTER_PASSWORD, null);
-        FlinkJedisClusterConfig.Builder builder = new FlinkJedisClusterConfig.Builder();
-        builder.setNodes(nodes);
-        if (StringUtils.isNotBlank(clusterPassword)) {
-            builder.setPassword(clusterPassword);
+
+        FlinkJedisClusterConfig.Builder builder = new FlinkJedisClusterConfig.Builder()
+                .setNodes(nodes)
+                .setMaxIdle(config.get(RedisOptions.CONNECTION_MAX_IDLE))
+                .setMaxTotal(config.get(RedisOptions.CONNECTION_MAX_TOTAL))
+                .setTimeout(config.get(RedisOptions.CONNECTION_TIMEOUT_MS));
+
+        String password = config.get(RedisOptions.PASSWORD);
+        if (Objects.nonNull(password)) {
+            builder.setPassword(password);
         }
         return builder.build();
     }
@@ -59,7 +59,7 @@ public class FlinkJedisClusterConfigHandler implements FlinkJedisConfigHandler {
     @Override
     public Map<String, String> requiredContext() {
         Map<String, String> require = new HashMap<>();
-        require.put(REDIS_MODE, REDIS_CLUSTER);
+        require.put(RedisOptions.MODE.key(), RedisOptions.Mode.CLUSTER.toString());
         return require;
     }
 

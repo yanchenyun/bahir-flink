@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.connectors.redis;
+package org.apache.flink.streaming.connectors.redis.table.sink;
 
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
@@ -30,6 +30,8 @@ import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommandDes
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisDataType;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisMapper;
 
+import org.apache.flink.table.data.RowData;
+import org.apache.flink.types.RowKind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,8 +53,8 @@ import java.util.Optional;
  * <p>Example:
  *
  * <pre>
- *{@code
- *public static class RedisExampleMapper implements RedisMapper<Tuple2<String, String>> {
+ * {@code
+ * public static class RedisExampleMapper implements RedisMapper<Tuple2<String, String>> {
  *
  *    private RedisCommand redisCommand;
  *
@@ -68,11 +70,11 @@ import java.util.Optional;
  *    public String getValueFromData(Tuple2<String, String> data) {
  *        return data.f1;
  *    }
- *}
- *JedisPoolConfig jedisPoolConfig = new JedisPoolConfig.Builder()
+ * }
+ * JedisPoolConfig jedisPoolConfig = new JedisPoolConfig.Builder()
  *    .setHost(REDIS_HOST).setPort(REDIS_PORT).build();
- *new RedisSink<String>(jedisPoolConfig, new RedisExampleMapper(RedisCommand.LPUSH));
- *}</pre>
+ * new RedisSink<String>(jedisPoolConfig, new RedisExampleMapper(RedisCommand.LPUSH));
+ * }</pre>
  *
  * @param <IN> Type of the elements emitted by this sink
  */
@@ -109,7 +111,7 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
      * Creates a new {@link RedisSink} that connects to the Redis server.
      *
      * @param flinkJedisConfigBase The configuration of {@link FlinkJedisConfigBase}
-     * @param redisSinkMapper This is used to generate Redis command and key value from incoming elements.
+     * @param redisSinkMapper      This is used to generate Redis command and key value from incoming elements.
      */
     public RedisSink(FlinkJedisConfigBase flinkJedisConfigBase, RedisMapper<IN> redisSinkMapper) {
         Objects.requireNonNull(flinkJedisConfigBase, "Redis connection pool config should not be null");
@@ -141,6 +143,11 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
 
         Optional<String> optAdditionalKey = redisSinkMapper.getAdditionalKey(input);
         Optional<Integer> optAdditionalTTL = redisSinkMapper.getAdditionalTTL(input);
+
+        RowKind rowKind = RowKind.INSERT;
+        if (input instanceof RowData) {
+            rowKind = ((RowData) input).getRowKind();
+        }
 
         switch (redisCommand) {
             case RPUSH:
@@ -174,8 +181,12 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
                 this.redisCommandsContainer.zrem(optAdditionalKey.orElse(this.additionalKey), key);
                 break;
             case HSET:
-                this.redisCommandsContainer.hset(optAdditionalKey.orElse(this.additionalKey), key, value,
-                        optAdditionalTTL.orElse(this.additionalTTL));
+                if (rowKind.equals(RowKind.DELETE) || rowKind.equals(RowKind.UPDATE_BEFORE)) {
+                    this.redisCommandsContainer.hdel(optAdditionalKey.orElse(this.additionalKey), key);
+                } else {
+                    this.redisCommandsContainer.hset(optAdditionalKey.orElse(this.additionalKey), key, value,
+                            optAdditionalTTL.orElse(this.additionalTTL));
+                }
                 break;
             case HINCRBY:
                 this.redisCommandsContainer.hincrBy(optAdditionalKey.orElse(this.additionalKey), key, Long.valueOf(value), optAdditionalTTL.orElse(this.additionalTTL));
@@ -205,8 +216,8 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
     @Override
     public void open(Configuration parameters) throws Exception {
         try {
-            this.redisCommandsContainer = RedisCommandsContainerBuilder.build(this.flinkJedisConfigBase);
-            this.redisCommandsContainer.open();
+            redisCommandsContainer = RedisCommandsContainerBuilder.build(this.flinkJedisConfigBase);
+            redisCommandsContainer.open();
         } catch (Exception e) {
             LOG.error("Redis has not been properly initialized: ", e);
             throw e;
@@ -215,6 +226,7 @@ public class RedisSink<IN> extends RichSinkFunction<IN> {
 
     /**
      * Closes commands container.
+     *
      * @throws IOException if command container is unable to close.
      */
     @Override

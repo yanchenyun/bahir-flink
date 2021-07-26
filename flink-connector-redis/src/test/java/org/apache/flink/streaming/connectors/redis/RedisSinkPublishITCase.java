@@ -25,6 +25,7 @@ import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommand;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommandDescription;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisMapper;
 
+import org.apache.flink.streaming.connectors.redis.table.sink.RedisSink;
 import redis.clients.jedis.JedisPool;
 
 import java.util.ArrayList;

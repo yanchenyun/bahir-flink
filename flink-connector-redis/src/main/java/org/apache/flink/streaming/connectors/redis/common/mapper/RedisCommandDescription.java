@@ -16,8 +16,9 @@
  */
 package org.apache.flink.streaming.connectors.redis.common.mapper;
 
+import org.apache.flink.util.Preconditions;
+
 import java.io.Serializable;
-import java.util.Objects;
 
 /**
  * The description of the command type. This must be passed while creating new {@link RedisMapper}.
@@ -66,7 +67,7 @@ public class RedisCommandDescription implements Serializable {
      * @param additionalTTL additional TTL optional for Hash data type
      */
     public RedisCommandDescription(RedisCommand redisCommand, String additionalKey, Integer additionalTTL) {
-        Objects.requireNonNull(redisCommand, "Redis command type can not be null");
+        Preconditions.checkNotNull(redisCommand, "Redis command type can not be null");
         this.redisCommand = redisCommand;
         this.additionalKey = additionalKey;
         this.additionalTTL = additionalTTL;

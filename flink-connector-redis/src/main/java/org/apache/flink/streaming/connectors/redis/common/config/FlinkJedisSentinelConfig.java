@@ -16,14 +16,10 @@
  */
 package org.apache.flink.streaming.connectors.redis.common.config;
 
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.apache.flink.streaming.connectors.redis.common.Util;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import redis.clients.jedis.Protocol;
+import org.apache.flink.streaming.connectors.redis.descriptor.RedisOptions;
+import org.apache.flink.util.Preconditions;
 
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -31,8 +27,6 @@ import java.util.Set;
  */
 public class FlinkJedisSentinelConfig extends FlinkJedisConfigBase {
     private static final long serialVersionUID = 1L;
-
-    private static final Logger LOG = LoggerFactory.getLogger(FlinkJedisSentinelConfig.class);
 
     private final String masterName;
     private final Set<String> sentinels;
@@ -65,9 +59,9 @@ public class FlinkJedisSentinelConfig extends FlinkJedisConfigBase {
                                      boolean testOnBorrow, boolean testOnReturn, boolean testWhileIdle) {
         super(connectionTimeout, maxTotal, maxIdle, minIdle, password, testOnBorrow, testOnReturn, testWhileIdle);
 
-        Objects.requireNonNull(masterName, "Master name should be presented");
-        Objects.requireNonNull(sentinels, "Sentinels information should be presented");
-        Util.checkArgument(!sentinels.isEmpty(), "Sentinel hosts should not be empty");
+        Preconditions.checkNotNull(masterName, "Master name should be presented");
+        Preconditions.checkNotNull(sentinels, "Sentinels information should be presented");
+        Preconditions.checkArgument(!sentinels.isEmpty(), "Sentinel hosts should not be empty");
 
         this.masterName = masterName;
         this.sentinels = new HashSet<>(sentinels);
@@ -117,16 +111,16 @@ public class FlinkJedisSentinelConfig extends FlinkJedisConfigBase {
     public static class Builder {
         private String masterName;
         private Set<String> sentinels;
-        private int connectionTimeout = Protocol.DEFAULT_TIMEOUT;
-        private int soTimeout = Protocol.DEFAULT_TIMEOUT;
+        private int connectionTimeout = RedisOptions.CONNECTION_TIMEOUT_MS.defaultValue();
+        private int soTimeout = RedisOptions.CONNECTION_TIMEOUT_MS.defaultValue();
         private String password;
-        private int database = Protocol.DEFAULT_DATABASE;
-        private int maxTotal = GenericObjectPoolConfig.DEFAULT_MAX_TOTAL;
-        private int maxIdle = GenericObjectPoolConfig.DEFAULT_MAX_IDLE;
-        private int minIdle = GenericObjectPoolConfig.DEFAULT_MIN_IDLE;
-        private boolean testOnBorrow = GenericObjectPoolConfig.DEFAULT_TEST_ON_BORROW;
-        private boolean testOnReturn = GenericObjectPoolConfig.DEFAULT_TEST_ON_RETURN;
-        private boolean testWhileIdle = GenericObjectPoolConfig.DEFAULT_TEST_WHILE_IDLE;
+        private int database = RedisOptions.DB_NUM.defaultValue();
+        private int maxTotal = RedisOptions.CONNECTION_MAX_TOTAL.defaultValue();
+        private int maxIdle = RedisOptions.CONNECTION_MAX_IDLE.defaultValue();
+        private int minIdle = RedisOptions.CONNECTION_MIN_IDLE.defaultValue();
+        private boolean testOnBorrow = RedisOptions.CONNECTION_TEST_ON_BORROW.defaultValue();
+        private boolean testOnReturn = RedisOptions.CONNECTION_TEST_ON_RETURN.defaultValue();
+        private boolean testWhileIdle = RedisOptions.CONNECTION_TEST_WHILE_IDLE.defaultValue();
 
         /**
          * Sets master name of the replica set.

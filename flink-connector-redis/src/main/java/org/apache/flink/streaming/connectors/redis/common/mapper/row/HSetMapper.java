@@ -28,4 +28,8 @@ public class HSetMapper extends RowRedisMapper {
         super(RedisCommand.HSET);
     }
 
+    public HSetMapper(Integer ttl) {
+        super(ttl, RedisCommand.HSET);
+    }
+
 }
